@@ -38,23 +38,33 @@ podAnnotations: {}
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+# The image is a distroless "nonroot" build that already runs as uid/gid 65532,
+# so these are safe, working defaults rather than commented-out suggestions.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
 
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   type: ClusterIP
-  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
+  # This sets the externally-facing service port more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 80
+  # This is the port the container actually listens on and gets passed to the app via -port.
+  # Kept separate from service.port: the container runs as a non-root user (see securityContext
+  # below), which cannot bind to privileged ports (<1024).
+  targetPort: 8000
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
@@ -122,6 +132,12 @@ resources:
   requests:
     cpu: 30m
     memory: 32Mi
+
+# Additional container env vars, appended after the built-in HOSTNAME/NODE_NAME
+# Downward API entries (see templates/deployment.yaml).
+extraEnv: []
+  # - name: LOG_LEVEL
+  #   value: "debug"
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
