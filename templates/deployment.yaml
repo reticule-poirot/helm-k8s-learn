@@ -69,7 +69,6 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- with .Values.readinessProbe }}
-          # FIXME FIX "Readiness probe failed" on first start
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
